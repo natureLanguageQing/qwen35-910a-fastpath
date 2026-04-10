@@ -18,10 +18,23 @@ Added patch script:
 
 - `scripts/patches/patch_recurrent_decode_fused_step_skip_redundant_kv.py`
 
+How to run:
+
+```bash
+# explicit target file
+python3 scripts/patches/patch_recurrent_decode_fused_step_skip_redundant_kv.py \
+  --target /path/to/qwen35_gdn_recurrent_decode_packed.cpp
+
+# auto-discover from a source tree
+python3 scripts/patches/patch_recurrent_decode_fused_step_skip_redundant_kv.py \
+  --search-root /path/to/recurrent_decode_packed_mvp
+```
+
 What it changes:
 
 - In `qwen35_gdn_recurrent_decode_packed.cpp` fused-step device path, when the packed `state@[k,q]` fastpath already produced `kv_mem`, skip the second redundant `state@k` matmul.
 - This keeps backend routing consistent and removes duplicate compute in the same decode step.
+- The script exits with non-zero status if no target is found or if the expected source pattern is not found.
 
 The current best strategy is a mixed route:
 
