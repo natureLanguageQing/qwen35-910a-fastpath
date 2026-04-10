@@ -2,6 +2,18 @@
 
 These numbers are microbenchmarks from a 910A optimization pass. They are intended to document route decisions, not to promise universal serving throughput.
 
+## Serving Single-Stream Snapshot
+
+Latest verified serving snapshot:
+
+- Date: `2026-04-11`
+- Route profile: `configs/single_card_single_stream_best.env`
+- Prompt type: text-only chat
+- Measurement: tokenizer-counted `tok/s`, `max_tokens=256`, 3 runs
+- Result: about `15.8 tok/s` (runs: `15.20 / 16.38 / 15.77 tok/s`)
+
+Do not compare these values directly with the microbench `active_tok_per_s` values below.
+
 ## Batch Step
 
 Boundary probe results:
@@ -52,4 +64,3 @@ Representative sampled values:
 - `StateApply` TBE variants also hit vector/lowering issues in the tested stack.
 - Split-device-op through `DeltaState + StateAdd` can be much faster than CPU fallback for small state-update probes, but the route must be shape-aware.
 - Large `batch_step` must be protected from accidentally falling into the wrong small-shape route.
-

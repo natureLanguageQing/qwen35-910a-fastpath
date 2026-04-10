@@ -61,14 +61,33 @@ Recommended bucket list:
 128x128,128x96,96x128,96x96,96x160,160x96
 ```
 
-Use the environment template in [configs/single_card_fast.env](configs/single_card_fast.env).
+Use the environment templates:
 
-Practical performance statement for external sharing:
+- Baseline single-card route: [configs/single_card_fast.env](configs/single_card_fast.env)
+- Current best-known single-stream route: [configs/single_card_single_stream_best.env](configs/single_card_single_stream_best.env)
 
-- Single-card single-stream: about `10 tok/s`
-- Single-card aggregate throughput: about `206 tok/s @ concurrency=64`
+Current serving-facing single-stream measurement (latest verified):
 
-These two numbers are serving-facing statements. They should not be mixed with the much higher recurrent microbench throughput numbers shown later in this document.
+- Date: `2026-04-11`
+- Method: OpenAI-compatible endpoint benchmark with tokenizer-based counting, `max_tokens=256`, 3 runs
+- Result: about `15.8 tok/s` (runs: `15.20 / 16.38 / 15.77 tok/s`)
+
+Note:
+
+- These are serving-facing numbers, not recurrent microbench numbers.
+- Keep microbench and serving figures separated in reports.
+
+Reproduce with:
+
+```bash
+python3 scripts/bench_openai_text.py \
+  --base-url http://127.0.0.1:18431 \
+  --model qwen3.5-9b \
+  --tokenizer-dir /path/to/Qwen3.5-9B \
+  --max-tokens 256 \
+  --runs 3 \
+  --ignore-empty-output
+```
 
 Measured microbench samples:
 

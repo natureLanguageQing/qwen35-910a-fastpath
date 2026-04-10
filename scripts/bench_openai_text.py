@@ -5,11 +5,20 @@ import argparse
 import json
 import time
 import urllib.request
+from typing import Callable
 
 
-def count_tokens_rough(text: str) -> int:
-    # Keep this script dependency-light for open-source smoke testing.
-    return max(1, len(text))
+def build_counter(tokenizer_dir: str | None) -> tuple[str, Callable[[str], int]]:
+    if not tokenizer_dir:
+        return "chars", lambda text: len(text)
+    try:
+        from transformers import AutoTokenizer
+    except Exception as exc:
+        raise RuntimeError(
+            "Failed to import transformers. Install it or omit --tokenizer-dir."
+        ) from exc
+    tok = AutoTokenizer.from_pretrained(tokenizer_dir, trust_remote_code=True)
+    return "tokens", lambda text: len(tok.encode(text, add_special_tokens=False))
 
 
 def main() -> None:
@@ -19,8 +28,19 @@ def main() -> None:
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--max-tokens", type=int, default=64)
     parser.add_argument("--prompt", default="请直接回答，不要展示思考过程。用中文简短介绍你自己。")
+    parser.add_argument(
+        "--tokenizer-dir",
+        default=None,
+        help="Optional tokenizer path for true token counting. If unset, uses char counting.",
+    )
+    parser.add_argument(
+        "--ignore-empty-output",
+        action="store_true",
+        help="Ignore runs with 0 output units when aggregating average throughput.",
+    )
     args = parser.parse_args()
 
+    unit_name, counter = build_counter(args.tokenizer_dir)
     vals: list[float] = []
     for i in range(args.runs):
         payload = {
@@ -40,14 +60,20 @@ def main() -> None:
             obj = json.loads(resp.read().decode("utf-8"))
         dt = time.perf_counter() - t0
         text = obj["choices"][0]["message"]["content"]
-        rough_tokens = count_tokens_rough(text)
-        char_s = rough_tokens / dt if dt > 0 else 0.0
-        vals.append(char_s)
-        print(f"run{i + 1}: {dt:.3f}s, rough_chars={rough_tokens}, rough_chars/s={char_s:.3f}")
+        units = counter(text)
+        units_s = units / dt if dt > 0 else 0.0
+        keep = not (args.ignore_empty_output and units == 0)
+        if keep:
+            vals.append(units_s)
+        print(
+            f"run{i + 1}: {dt:.3f}s, {unit_name}={units}, "
+            f"{unit_name}/s={units_s:.3f}, kept={int(keep)}"
+        )
 
-    print(f"avg_rough_chars/s={sum(vals) / len(vals):.3f}")
+    if not vals:
+        raise RuntimeError("No valid runs left after filtering.")
+    print(f"avg_{unit_name}/s={sum(vals) / len(vals):.3f}")
 
 
 if __name__ == "__main__":
     main()
-
