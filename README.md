@@ -12,6 +12,17 @@ The optimization target is low-level decode performance, not HTTP proxy tricks. 
 - `batch_step`: batched decode step, especially `duplicate_rounds_fastpath` and `unique_fastpath`.
 - `state_update`: the recurrent state transition path.
 
+## Latest Low-Level Patch
+
+Added patch script:
+
+- `scripts/patches/patch_recurrent_decode_fused_step_skip_redundant_kv.py`
+
+What it changes:
+
+- In `qwen35_gdn_recurrent_decode_packed.cpp` fused-step device path, when the packed `state@[k,q]` fastpath already produced `kv_mem`, skip the second redundant `state@k` matmul.
+- This keeps backend routing consistent and removes duplicate compute in the same decode step.
+
 The current best strategy is a mixed route:
 
 - Use `state_update_registered_stub` for `batch_step`.
