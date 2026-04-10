@@ -39,6 +39,13 @@ Recommended bucket list:
 
 Use the environment template in [configs/single_card_fast.env](configs/single_card_fast.env).
 
+Practical performance statement for external sharing:
+
+- Single-card single-stream: about `10 tok/s`
+- Single-card aggregate throughput: about `206 tok/s @ concurrency=64`
+
+These two numbers are serving-facing statements. They should not be mixed with the much higher recurrent microbench throughput numbers shown later in this document.
+
 Measured microbench samples:
 
 | Case | Current fastpath | Fallback | Result |
@@ -127,4 +134,3 @@ Benchmarks in this package are microbench results, not a universal serving SLA. 
 - request mix between text and multimodal
 
 The benchmark source summary is in [benchmarks/results_summary.md](benchmarks/results_summary.md).
-
